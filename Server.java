@@ -125,7 +125,10 @@ public final class Server {
 			rawRequest.add(inputLine);
 		} while ((inputLine != null) && (inputLine.length() > 0));
 
-		System.out.println(String.format("[%s]", rawRequest));	
+		if (rawRequest == null)
+			return;
+
+		System.out.println(String.format("[%s]", rawRequest));
 		HTTPRequest request = new HTTPRequest(rawRequest);
 		connection = request.getConnection();
 		System.out.println(request);
