@@ -12,8 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class Server {
-	private static int serverPort = 4446;
-	private static int sslServerPort = 4447;
+
 	private Map<String, byte[]> resourceMap;
 	private Map<String, String> redirectMap;
 	private ServerSocket socket;
@@ -31,7 +30,7 @@ public final class Server {
 	 *
 	 * @throws {@link IOException} if the port is already in use.
 	 */
-	public void bindHTTPS() throws IOException {
+	public void bindHTTPS(int sslServerPort) throws IOException {
 		final char[] JKS_PASSWORD = "password".toCharArray();
 		final char[] KEY_PASSWORD = "password".toCharArray();
 		try {
@@ -73,7 +72,7 @@ public final class Server {
 		}
 	}
 
-	public void bindHTTP() throws IOException {
+	public void bindHTTP(int serverPort) throws IOException {
 		System.out.println("Attempting to bind on " + serverPort);
 		socket = new ServerSocket(serverPort);
 		System.out.println("Server bound and listening to port " + serverPort);
@@ -222,22 +221,22 @@ public final class Server {
 		}
 	}
 
-	public void bootHTTP(){
+	public void bootHTTP(int serverPort){
 		connection = true;
 		try {
 			this.loadResources();
-			this.bindHTTP();
+			this.bindHTTP(serverPort);
 			this.readStuff();
 		} catch (IOException e) {
 			System.out.println("Error communicating with client. aborting. Details: " + e);
 		}
 	}
 
-	public void bootHTTPS(){
+	public void bootHTTPS(int sslServerPort){
 		connection = true;
 		try {
 			this.loadResources();
-			this.bindHTTPS();
+			this.bindHTTPS(sslServerPort);
 			this.readStuff();
 		} catch (IOException e) {
 			System.out.println("Error communicating with client. aborting. Details: " + e);
@@ -268,22 +267,32 @@ public final class Server {
 
 
 	public static void main(String argv[]) {
-//		Map<String, String> flags = Utils.parseCmdlineFlags(argv);
-//		if (!flags.containsKey("--serverPort")) {
-//			System.out.println("usage: Server --serverPort=12345");
-//			System.exit(-1);
-//		}
-//
-//		int serverPort = -1;
-//		try {
-//			serverPort = Integer.parseInt(flags.get("--serverPort"));
-//		} catch (NumberFormatException e) {
-//			System.out.println("Invalid port number! Must be an integer.");
-//			System.exit(-1);
-//		}
-//		serverPort = 4444;
-//		sslServerPort = 4445;
+		Map<String, String> flags = Utils.parseCmdlineFlags(argv);
+		if (!flags.containsKey("--serverPort")) {
+			System.out.println("usage: Server --serverPort=12345");
+			System.exit(-1);
+		}
 
+		int serverPort = -1;
+		int sslServerPort = -1;
+
+		try {
+			serverPort = Integer.parseInt(flags.get("--serverPort"));
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid port number! Must be an integer.");
+			System.exit(-1);
+		}
+
+
+		try {
+			serverPort = Integer.parseInt(flags.get("--serverPort"));
+			System.out.println("serverPort: " + serverPort);
+			sslServerPort = Integer.parseInt(flags.get("--sslServerPort"));
+			System.out.println("sslServerPort: " + sslServerPort);
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid port number! Must be an integer.");
+			System.exit(-1);
+		}
 
 		Server serverHTTP = new Server();
 		ServerThread threadHTTP = new ServerThread("HTTP",serverHTTP,serverPort);
@@ -313,9 +322,9 @@ class ServerThread implements Runnable {
 
 	public void run() {
 		if (serverType.equals("HTTP")) {
-			server.bootHTTP();
+			server.bootHTTP(portNumber);
 		} else {
-			server.bootHTTPS();
+			server.bootHTTPS(portNumber);
 		}
 	}
 
