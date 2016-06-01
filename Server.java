@@ -35,15 +35,13 @@ public final class Server {
 		final char[] KEY_PASSWORD = "password".toCharArray();
 		try {
 		/* Get the JKS contents */
+			// Create keyStore and load in our server.jks file
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			final InputStream is = new FileInputStream("server.jks");
 			keyStore.load(is, JKS_PASSWORD);
+			// Create keyMangerFac to manage our key
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance("PKIX");
-//			System.out.println(kmf.getProvider());
 			kmf.init(keyStore, KEY_PASSWORD);
-//			final TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-//			tmf.init(keyStore);
-// Create a trust manager that does not validate certificate chains
 			TrustManager[] trustAllCerts = new TrustManager[] {
 					new X509TrustManager() {
 						public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -57,11 +55,11 @@ public final class Server {
 						}
 					}
 			};
+			// Use SLLContext to create factory to create key
 			SSLContext context = SSLContext.getInstance("SSL");
-//			context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 			context.init(kmf.getKeyManagers(), trustAllCerts, new SecureRandom());
 			SSLServerSocketFactory ssf = context.getServerSocketFactory();
-
+			// Binding
 			System.out.println("Attempting to bind on " + sslServerPort);
 			socket = ssf.createServerSocket(sslServerPort);
 
@@ -116,12 +114,9 @@ public final class Server {
 	public void handleRequest() throws IOException {
 		List<String> rawRequest = new ArrayList<String>();
 		String inputLine;
+		// This is where we read the requst
 		do {
 			inputLine = fromClientStream.readLine();
-//			while (inputLine == null) {
-//				System.out.println("inputLine was null!\n");
-//				inputLine = fromClientStream.readLine();
-//			}
 			rawRequest.add(inputLine);
 		} while ((inputLine != null) && (inputLine.length() > 0));
 
@@ -248,6 +243,7 @@ public final class Server {
 
 	public void readStuff() throws IOException {
 		while(true) {
+			// This is when we open our connection
 			Socket clientSocket = this.acceptFromClient();
 			if (clientSocket != null && clientSocket.isConnected()) {
 				try {
@@ -255,6 +251,7 @@ public final class Server {
 				} catch (IOException e) {
 					System.out.println("IO exception handling request, continuing.");
 				}
+				// We'll close the connection if the clinet requests a closed connection
 				try {
 					if(!connection){
 						clientSocket.close();
@@ -296,11 +293,11 @@ public final class Server {
 			System.out.println("Invalid port number! Must be an integer.");
 			System.exit(-1);
 		}
-
+		// This sets up our HTTP thread
 		Server serverHTTP = new Server();
 		ServerThread threadHTTP = new ServerThread("HTTP",serverHTTP,serverPort);
 		threadHTTP.start();
-////
+		// This sets up our HTTPS thread
 		Server serverHTTPS = new Server();
 		ServerThread threadHTTPS = new ServerThread("HTTPS",serverHTTPS,sslServerPort);
 		threadHTTPS.start();
